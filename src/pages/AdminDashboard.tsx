@@ -47,7 +47,7 @@ const AdminDashboard = () => {
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-primary">SerraStay Admin</h1>
+            <h1 className="text-2xl font-bold text-primary">Center Plaza Admin</h1>
           </div>
           
           <div className="flex items-center gap-4">
@@ -96,7 +96,7 @@ const AdminDashboard = () => {
             {/* Welcome */}
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-              <p className="text-muted-foreground">Bem-vindo ao painel de controle do SerraStay</p>
+              <p className="text-muted-foreground">Bem-vindo ao painel de controle do Center Plaza</p>
             </div>
 
             {/* Stats Grid */}

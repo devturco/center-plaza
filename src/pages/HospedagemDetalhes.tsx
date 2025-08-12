@@ -7,6 +7,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AuthModal } from "@/components/AuthModal";
+import { ShareModal } from "@/components/ShareModal";
+import { BookingFlow } from "@/components/BookingFlow";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { toast } from "sonner";
 import { 
   Star, 
   MapPin, 
@@ -16,12 +25,14 @@ import {
   Coffee,
   ArrowLeft,
   Heart,
-  Share,
+  Share2,
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
   CreditCard
 } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import accommodation1 from "@/assets/accommodation-1.jpg";
 import accommodation2 from "@/assets/accommodation-2.jpg";
 import accommodation3 from "@/assets/accommodation-3.jpg";
@@ -29,10 +40,15 @@ import accommodation3 from "@/assets/accommodation-3.jpg";
 const HospedagemDetalhes = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [guests, setGuests] = useState(2);
   const [nights, setNights] = useState(3);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [bookingFlowOpen, setBookingFlowOpen] = useState(false);
 
   // Mock data - in real app, fetch based on ID
   const accommodation = {
@@ -92,6 +108,42 @@ const HospedagemDetalhes = () => {
     );
   };
 
+  const handleFavorite = () => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    
+    const isCurrentlyFavorited = isFavorite(accommodation.id.toString());
+    
+    if (isCurrentlyFavorited) {
+      removeFromFavorites(accommodation.id.toString());
+      toast.success("Removido dos favoritos");
+    } else {
+      addToFavorites({
+        id: accommodation.id.toString(),
+        name: accommodation.name,
+        location: accommodation.location,
+        price: accommodation.price,
+        rating: accommodation.rating,
+        image: accommodation.images[0]
+      });
+      toast.success("Adicionado aos favoritos");
+    }
+  };
+
+  const handleShare = () => {
+    setShareModalOpen(true);
+  };
+
+  const handleBookNow = () => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+    setBookingFlowOpen(true);
+  };
+
   const totalPrice = accommodation.price * nights;
 
   return (
@@ -145,11 +197,16 @@ const HospedagemDetalhes = () => {
 
             {/* Action Buttons */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <Button variant="secondary" size="icon" className="bg-white/90 hover:bg-white">
-                <Share className="h-4 w-4" />
+              <Button variant="secondary" size="icon" className="bg-white/90 hover:bg-white" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
               </Button>
-              <Button variant="secondary" size="icon" className="bg-white/90 hover:bg-white">
-                <Heart className="h-4 w-4" />
+              <Button 
+                variant="secondary" 
+                size="icon" 
+                className={`bg-white/90 hover:bg-white ${isFavorite(accommodation.id.toString()) ? "text-red-500" : ""}`}
+                onClick={handleFavorite}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite(accommodation.id.toString()) ? "fill-current" : ""}`} />
               </Button>
             </div>
           </div>
@@ -353,7 +410,7 @@ const HospedagemDetalhes = () => {
                     <Button 
                       className="w-full" 
                       size="lg"
-                      onClick={() => navigate("/reserva/" + accommodation.id)}
+                      onClick={handleBookNow}
                     >
                       <CreditCard className="mr-2 h-4 w-4" />
                       Reservar Agora
@@ -371,6 +428,28 @@ const HospedagemDetalhes = () => {
       </main>
 
       <Footer />
+
+      {/* Modals */}
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+      <ShareModal 
+        open={shareModalOpen} 
+        onOpenChange={setShareModalOpen}
+        title={accommodation.name}
+        url={window.location.href}
+      />
+      <BookingFlow 
+        open={bookingFlowOpen}
+        onOpenChange={setBookingFlowOpen}
+        accommodation={{
+          id: accommodation.id,
+          name: accommodation.name,
+          location: accommodation.location,
+          price: accommodation.price,
+          maxGuests: accommodation.maxGuests,
+          image: accommodation.images[0],
+          amenities: accommodation.amenities
+        }}
+      />
     </div>
   );
 };

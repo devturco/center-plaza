@@ -30,7 +30,7 @@ const AdminLogin = () => {
     
     // Simulate authentication
     setTimeout(() => {
-      if (email === "admin@serrastay.com" && password === "admin123") {
+      if (email === "admin@centerplaza.com" && password === "admin123") {
         toast({
           title: "Login realizado com sucesso!",
           description: "Redirecionando para o painel administrativo...",
@@ -52,7 +52,7 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary-foreground mb-2">SerraStay</h1>
+          <h1 className="text-4xl font-bold text-primary-foreground mb-2">Center Plaza</h1>
           <p className="text-primary-foreground/80">Painel Administrativo</p>
         </div>
 
@@ -78,7 +78,7 @@ const AdminLogin = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@serrastay.com"
+                    placeholder="admin@centerplaza.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
@@ -130,7 +130,7 @@ const AdminLogin = () => {
             <div className="mt-6 p-4 bg-muted rounded-lg">
               <p className="text-sm text-muted-foreground">
                 <strong>Credenciais de teste:</strong><br />
-                E-mail: admin@serrastay.com<br />
+                E-mail: admin@centerplaza.com<br />
                 Senha: admin123
               </p>
             </div>

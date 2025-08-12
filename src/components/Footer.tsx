@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 py-16">
           {/* Brand Section */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold">SerraStay</h3>
+            <h3 className="text-2xl font-bold">Center Plaza</h3>
             <p className="text-primary-foreground/80 leading-relaxed">
               Experiências únicas de hospedagem na serra, onde o conforto 
               encontra a natureza em perfeita harmonia.
@@ -86,7 +86,7 @@ const Footer = () => {
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-accent-warm" />
                 <span className="text-primary-foreground/80">
-                  contato@serrastay.com.br
+                  contato@centerplaza.com.br
                 </span>
               </div>
             </div>
@@ -97,7 +97,7 @@ const Footer = () => {
         <div className="border-t border-primary-foreground/20 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-primary-foreground/60 text-sm">
-              © 2024 SerraStay. Todos os direitos reservados.
+              © 2024 Center Plaza. Todos os direitos reservados.
             </p>
             <div className="flex gap-6 text-sm">
               <Link to="/privacidade" className="text-primary-foreground/60 hover:text-accent-warm transition-colors">

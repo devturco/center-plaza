@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthModal } from "@/components/AuthModal";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navItems = [
     { name: "Início", href: "/" },
@@ -22,7 +27,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="text-2xl font-bold text-primary">
-            SerraStay
+            Center Plaza
           </Link>
 
           {/* Desktop Navigation */}
@@ -40,6 +45,32 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <User className="h-4 w-4 mr-2" />
+                    {user?.name}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/minha-conta">Minha Conta</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="outline" onClick={() => setAuthModalOpen(true)}>
+                Entrar
+              </Button>
+            )}
+            
             <Button variant="outline" asChild>
               <Link to="/admin">Painel Admin</Link>
             </Button>
@@ -71,6 +102,41 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/minha-conta"
+                  className="block py-2 text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Minha Conta
+                </Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-2" 
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="w-full mt-2" 
+                onClick={() => {
+                  setAuthModalOpen(true);
+                  setIsMenuOpen(false);
+                }}
+              >
+                Entrar
+              </Button>
+            )}
+            
             <Button variant="outline" className="w-full mt-4" asChild>
               <Link to="/admin" onClick={() => setIsMenuOpen(false)}>
                 Painel Admin
@@ -79,6 +145,8 @@ const Header = () => {
           </nav>
         )}
       </div>
+      
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
     </header>
   );
 };

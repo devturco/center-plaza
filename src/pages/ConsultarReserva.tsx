@@ -7,30 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Search, Calendar, Users, MapPin, CheckCircle, Clock, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useReservations, type Reservation } from "@/contexts/ReservationContext";
+
+// Interface movida para ReservationContext
 
 const ConsultarReserva = () => {
+  const { getReservationByCodeAndName } = useReservations();
   const [reservationCode, setReservationCode] = useState("");
   const [lastName, setLastName] = useState("");
-  const [reservation, setReservation] = useState<any>(null);
+  const [reservation, setReservation] = useState<Reservation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  // Mock data for demonstration
-  const mockReservation = {
-    id: "RS001234",
-    accommodationName: "Chalé das Montanhas",
-    status: "confirmada",
-    checkIn: "2024-03-15",
-    checkOut: "2024-03-18",
-    guests: 4,
-    totalAmount: 960,
-    guestName: "João Silva",
-    email: "joao@email.com",
-    phone: "(11) 99999-9999",
-    location: "Serra da Mantiqueira",
-    amenities: ["Wi-Fi", "Estacionamento", "Café da manhã"],
-    paymentStatus: "pago",
-  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +35,10 @@ const ConsultarReserva = () => {
     
     // Simulate API call
     setTimeout(() => {
-      if (reservationCode.toUpperCase() === "RS001234" && lastName.toLowerCase() === "silva") {
-        setReservation(mockReservation);
+      const foundReservation = getReservationByCodeAndName(reservationCode, lastName);
+      
+      if (foundReservation) {
+        setReservation(foundReservation);
         toast({
           title: "Reserva encontrada!",
           description: "Aqui estão os detalhes da sua reserva.",
@@ -231,7 +220,7 @@ const ConsultarReserva = () => {
                       <div>
                         <span className="text-sm text-muted-foreground">Valor Total</span>
                         <p className="font-medium text-lg text-primary">
-                          R$ {reservation.totalAmount.toLocaleString()}
+                          R$ {reservation.total.toLocaleString()}
                         </p>
                       </div>
                     </div>
