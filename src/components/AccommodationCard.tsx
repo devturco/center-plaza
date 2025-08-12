@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, MapPin, Users, Wifi, Car, Coffee } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface AccommodationCardProps {
   id: number;
@@ -29,6 +29,7 @@ const AccommodationCard = ({
   amenities,
   featured = false,
 }: AccommodationCardProps) => {
+  const navigate = useNavigate();
   const getAmenityIcon = (amenity: string) => {
     switch (amenity) {
       case "wifi":
@@ -110,19 +111,32 @@ const AccommodationCard = ({
         </div>
 
         {/* Price and CTA */}
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-2xl font-bold text-primary">
-              R$ {price.toLocaleString()}
-            </span>
-            <span className="text-sm text-muted-foreground ml-1">/noite</span>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <span className="text-2xl font-bold text-primary">
+                R$ {price.toLocaleString()}
+              </span>
+              <span className="text-sm text-muted-foreground ml-1">/noite</span>
+            </div>
           </div>
           
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/hospedagem/${id}`}>
-              Ver detalhes
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => navigate(`/hospedagem/${id}`)}
+            >
+              Ver Detalhes
+            </Button>
+            <Button 
+              className="flex-1" 
+              variant="hero"
+              onClick={() => navigate(`/hospedagem/${id}`)}
+            >
+              Reservar
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
