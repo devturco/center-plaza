@@ -27,9 +27,9 @@ const HeroSection = () => {
 
           {/* Main Heading */}
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Refúgio de
+            Escape para o
             <span className="block bg-gradient-to-r from-accent-warm to-accent bg-clip-text text-transparent">
-              Tranquilidade
+              Extraordinário
             </span>
           </h1>
 

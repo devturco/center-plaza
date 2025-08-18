@@ -1,73 +1,208 @@
-# Welcome to your Lovable project
+# 🏨 Center Plaza - Sistema de Reservas
 
-## Project info
+Um sistema completo de reservas para acomodações, desenvolvido com React, TypeScript e Vite. O Center Plaza oferece uma experiência moderna e intuitiva para reserva de hospedagens.
 
-**URL**: https://lovable.dev/projects/ccb7ad15-7a24-4f05-90b0-3e1b6812edf8
+## 🚀 Funcionalidades
 
-## How can I edit this code?
+### 👤 Sistema de Autenticação
+- ✅ Login e registro de usuários
+- ✅ Proteção de rotas
+- ✅ Contexto de autenticação global
+- ✅ Modal de autenticação responsivo
 
-There are several ways of editing your application.
+### 🏠 Gestão de Acomodações
+- ✅ Catálogo de acomodações
+- ✅ Detalhes completos das propriedades
+- ✅ Sistema de favoritos persistente
+- ✅ Compartilhamento de acomodações
+- ✅ Galeria de imagens
 
-**Use Lovable**
+### 📅 Sistema de Reservas
+- ✅ Fluxo completo de reserva
+- ✅ Seleção de datas e hóspedes
+- ✅ Cálculo automático de preços
+- ✅ Múltiplas formas de pagamento (PIX, Cartão)
+- ✅ Confirmação e voucher de reserva
+- ✅ Consulta de reservas por código
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ccb7ad15-7a24-4f05-90b0-3e1b6812edf8) and start prompting.
+### 👨‍💼 Painel do Usuário
+- ✅ Dashboard personalizado
+- ✅ Histórico de reservas
+- ✅ Gerenciamento de favoritos
+- ✅ Perfil do usuário editável
+- ✅ Download de vouchers
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🔧 Painel Administrativo
+- ✅ Gestão de hospedagens
+- ✅ Controle de reservas
+- ✅ Relatórios e estatísticas
+- ✅ Dashboard administrativo
 
-**Use your preferred IDE**
+## 🛠️ Tecnologias Utilizadas
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Roteamento**: React Router DOM
+- **Gerenciamento de Estado**: Context API
+- **Persistência**: localStorage
+- **Ícones**: Lucide React
+- **Formulários**: React Hook Form + Zod
+- **Componentes**: Radix UI
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 📦 Instalação e Desenvolvimento
 
-Follow these steps:
+### Pré-requisitos
+- Node.js 18+ 
+- npm ou yarn
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Passos para instalação
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# 1. Clone o repositório
+git clone https://github.com/seu-usuario/center-plaza.git
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 2. Navegue para o diretório
+cd center-plaza
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 3. Instale as dependências
+npm install
+
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+O projeto estará disponível em `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🚀 Deploy
 
-**Use GitHub Codespaces**
+### Build de Produção
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# Gerar build de produção
+npm run build
 
-## What technologies are used for this project?
+# Testar build localmente
+npm run preview
+```
 
-This project is built with:
+### Scripts de Deploy Disponíveis
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+# Deploy genérico (apenas build)
+npm run deploy
 
-## How can I deploy this project?
+# Deploy para Vercel
+npm run deploy:vercel
 
-Simply open [Lovable](https://lovable.dev/projects/ccb7ad15-7a24-4f05-90b0-3e1b6812edf8) and click on Share -> Publish.
+# Deploy para Netlify
+npm run deploy:netlify
 
-## Can I connect a custom domain to my Lovable project?
+# Deploy para Surge
+npm run deploy:surge
 
-Yes, you can!
+# Build + Preview
+npm run serve
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Plataformas Suportadas
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- **Vercel** (Recomendado) - Configuração automática
+- **Netlify** - Com redirects para SPA
+- **GitHub Pages** - Via GitHub Actions
+- **Surge.sh** - Deploy rápido
+- **Servidor próprio** - Arquivos estáticos
+
+### Deploy Automático
+
+O projeto inclui GitHub Actions para deploy automático:
+- ✅ Build e testes em múltiplas versões do Node.js
+- ✅ Deploy automático para Vercel, Netlify e GitHub Pages
+- ✅ Configurações de cache otimizadas
+- ✅ Headers de segurança
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── ui/             # Componentes base (shadcn/ui)
+│   ├── AccommodationCard.tsx
+│   ├── AuthModal.tsx
+│   ├── BookingFlow.tsx
+│   └── ...
+├── contexts/           # Contextos React
+│   ├── AuthContext.tsx
+│   ├── FavoritesContext.tsx
+│   └── ReservationContext.tsx
+├── pages/              # Páginas da aplicação
+│   ├── Index.tsx
+│   ├── UserDashboard.tsx
+│   ├── AdminDashboard.tsx
+│   └── ...
+├── hooks/              # Hooks customizados
+├── lib/                # Utilitários
+└── assets/             # Imagens e recursos
+```
+
+## 🌟 Características Principais
+
+- **Responsivo**: Interface adaptável para desktop, tablet e mobile
+- **Performance**: Build otimizado com Vite e lazy loading
+- **Acessibilidade**: Componentes acessíveis com Radix UI
+- **SEO**: Meta tags otimizadas e estrutura semântica
+- **Segurança**: Headers de segurança e validação de dados
+- **PWA Ready**: Preparado para implementação de PWA
+
+## 🔧 Configuração de Ambiente
+
+### Variáveis de Ambiente (Opcional)
+
+Crie um arquivo `.env.local` na raiz do projeto:
+
+```env
+VITE_API_URL=https://api.centerplaza.com
+VITE_APP_ENV=production
+VITE_ANALYTICS_ID=your-analytics-id
+```
+
+## 📊 Scripts Disponíveis
+
+| Script | Descrição |
+|--------|----------|
+| `npm run dev` | Inicia servidor de desenvolvimento |
+| `npm run build` | Gera build de produção |
+| `npm run preview` | Testa build localmente |
+| `npm run lint` | Executa linter |
+| `npm run deploy` | Script de deploy genérico |
+| `npm run deploy:vercel` | Deploy para Vercel |
+| `npm run deploy:netlify` | Deploy para Netlify |
+| `npm run serve` | Build + Preview |
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 👥 Equipe
+
+- **Desenvolvimento**: Equipe Center Plaza
+- **Design**: UI/UX Team
+- **Backend**: API Team
+
+## 📞 Suporte
+
+Para suporte técnico ou dúvidas:
+- Email: dev@centerplaza.com
+- Issues: [GitHub Issues](https://github.com/seu-usuario/center-plaza/issues)
+
+---
+
+⭐ **Se este projeto foi útil, considere dar uma estrela no GitHub!**
