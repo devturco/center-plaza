@@ -141,7 +141,8 @@ const AdminHospedagens = () => {
     try {
       const updatedHotel = {
         name: formData.name,
-        location: formData.location,
+        address: formData.location, // Mapear location para address
+        city: 'São Paulo', // Valor padrão
         description: formData.description
       };
       
