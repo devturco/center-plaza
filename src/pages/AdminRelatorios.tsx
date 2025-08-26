@@ -11,7 +11,8 @@ import {
   DollarSign,
   Users,
   Star,
-  TrendingDown
+  TrendingDown,
+  Bed
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -113,6 +114,10 @@ const AdminRelatorios = () => {
             <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/reservas")}>
               <Calendar className="mr-2 h-4 w-4" />
               Reservas
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/criar-quartos")}>
+              <Bed className="mr-2 h-4 w-4" />
+              Criar Quartos
             </Button>
             <Button variant="default" className="w-full justify-start">
               <TrendingUp className="mr-2 h-4 w-4" />

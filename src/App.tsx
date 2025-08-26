@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminHospedagens from "./pages/AdminHospedagens";
 import AdminReservas from "./pages/AdminReservas";
 import AdminRelatorios from "./pages/AdminRelatorios";
+import AdminCriarQuartos from "./pages/AdminCriarQuartos";
 import UserDashboard from "./pages/UserDashboard";
 import ReservationDetails from "./pages/ReservationDetails";
 import UserProfile from "./pages/UserProfile";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/hospedagens" element={<AdminHospedagens />} />
             <Route path="/admin/reservas" element={<AdminReservas />} />
+            <Route path="/admin/criar-quartos" element={<AdminCriarQuartos />} />
             <Route path="/admin/relatorios" element={<AdminRelatorios />} />
             <Route path="/minha-conta" element={<UserDashboard />} />
             <Route path="/reserva/:id" element={<ReservationDetails />} />

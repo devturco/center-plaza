@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   BarChart3,
-  MapPin
+  MapPin,
+  Bed
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -82,6 +83,10 @@ const AdminDashboard = () => {
             <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/reservas")}>
               <Calendar className="mr-2 h-4 w-4" />
               Reservas
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/criar-quartos")}>
+              <Bed className="mr-2 h-4 w-4" />
+              Criar Quartos
             </Button>
             <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/relatorios")}>
               <TrendingUp className="mr-2 h-4 w-4" />
