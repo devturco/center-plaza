@@ -4,96 +4,36 @@ import Footer from "@/components/Footer";
 import AccommodationCard from "@/components/AccommodationCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Users, Star } from "lucide-react";
-import accommodation1 from "@/assets/accommodation-1.jpg";
-import accommodation2 from "@/assets/accommodation-2.jpg";
-import accommodation3 from "@/assets/accommodation-3.jpg";
+import { Search, Filter, Users, Star, Loader2 } from "lucide-react";
+import { useRooms } from "@/hooks/useRooms";
 
 const Hospedagens = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGuests, setSelectedGuests] = useState("");
+  const [sortBy, setSortBy] = useState("featured");
+  
+  const { rooms: accommodations, loading, error } = useRooms();
 
-  const accommodations = [
-    {
-      id: 1,
-      name: "Chalé das Montanhas",
-      image: accommodation1,
-      location: "Serra da Mantiqueira",
-      rating: 4.9,
-      reviewCount: 42,
-      price: 320,
-      maxGuests: 6,
-      amenities: ["wifi", "estacionamento", "cafe"],
-      featured: true,
-    },
-    {
-      id: 2,
-      name: "Casa de Vidro",
-      image: accommodation2,
-      location: "Vale Encantado",
-      rating: 4.8,
-      reviewCount: 28,
-      price: 450,
-      maxGuests: 4,
-      amenities: ["wifi", "estacionamento"],
-      featured: false,
-    },
-    {
-      id: 3,
-      name: "Refúgio de Pedra",
-      image: accommodation3,
-      location: "Picos da Serra",
-      rating: 4.9,
-      reviewCount: 56,
-      price: 380,
-      maxGuests: 8,
-      amenities: ["wifi", "estacionamento", "cafe"],
-      featured: true,
-    },
-    {
-      id: 4,
-      name: "Vila dos Pássaros",
-      image: accommodation1,
-      location: "Mata Atlântica",
-      rating: 4.7,
-      reviewCount: 33,
-      price: 280,
-      maxGuests: 4,
-      amenities: ["wifi", "cafe"],
-      featured: false,
-    },
-    {
-      id: 5,
-      name: "Loft Panorâmico",
-      image: accommodation2,
-      location: "Mirante da Serra",
-      rating: 4.8,
-      reviewCount: 41,
-      price: 420,
-      maxGuests: 2,
-      amenities: ["wifi", "estacionamento"],
-      featured: false,
-    },
-    {
-      id: 6,
-      name: "Casa do Lago",
-      image: accommodation3,
-      location: "Lagoa Serena",
-      rating: 4.9,
-      reviewCount: 67,
-      price: 550,
-      maxGuests: 10,
-      amenities: ["wifi", "estacionamento", "cafe"],
-      featured: true,
-    },
-  ];
-
-  const filteredAccommodations = accommodations.filter(accommodation => {
-    const matchesSearch = accommodation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         accommodation.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGuests = selectedGuests === "" || accommodation.maxGuests >= parseInt(selectedGuests);
-    return matchesSearch && matchesGuests;
-  });
+  const filteredAndSortedAccommodations = accommodations
+    .filter(accommodation => {
+      const matchesSearch = accommodation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           accommodation.location.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesGuests = selectedGuests === "" || accommodation.maxGuests >= parseInt(selectedGuests);
+      return matchesSearch && matchesGuests;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price-low":
+          return a.price - b.price;
+        case "price-high":
+          return b.price - a.price;
+        case "rating":
+          return b.rating - a.rating;
+        case "featured":
+        default:
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+      }
+    });
 
   return (
     <div className="min-h-screen">
@@ -153,44 +93,74 @@ const Hospedagens = () => {
         {/* Results */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-8">
-              <p className="text-muted-foreground">
-                {filteredAccommodations.length} hospedagem(ns) encontrada(s)
-              </p>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Ordenar por:</span>
-                <select className="border border-input rounded-md px-3 py-1 bg-background text-foreground">
-                  <option>Destaque</option>
-                  <option>Menor Preço</option>
-                  <option>Maior Preço</option>
-                  <option>Melhor Avaliação</option>
-                </select>
+            {loading ? (
+              <div className="flex justify-center items-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Carregando acomodações...</span>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredAccommodations.map((accommodation, index) => (
-                <div
-                  key={accommodation.id}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <AccommodationCard {...accommodation} />
-                </div>
-              ))}
-            </div>
-
-            {filteredAccommodations.length === 0 && (
+            ) : error ? (
               <div className="text-center py-16">
-                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <h3 className="text-xl font-semibold mb-2">Nenhuma hospedagem encontrada</h3>
-                <p className="text-muted-foreground">
-                  Tente ajustar seus filtros de busca para encontrar mais opções.
-                </p>
+                <p className="text-red-500 mb-4">{error}</p>
+                <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
               </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-8">
+                  <p className="text-muted-foreground">
+                    {filteredAndSortedAccommodations.length} hospedagem(ns) encontrada(s)
+                  </p>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Ordenar por:</span>
+                    <select 
+                      className="border border-input rounded-md px-3 py-1 bg-background text-foreground"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="featured">Destaque</option>
+                      <option value="price-low">Menor Preço</option>
+                      <option value="price-high">Maior Preço</option>
+                      <option value="rating">Melhor Avaliação</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredAndSortedAccommodations.map((accommodation, index) => (
+                    <div
+                      key={accommodation.id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <AccommodationCard {...accommodation} />
+                    </div>
+                  ))}
+                </div>
+
+                {filteredAndSortedAccommodations.length === 0 && accommodations.length > 0 && (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Nenhuma hospedagem encontrada</h3>
+                    <p className="text-muted-foreground">
+                      Tente ajustar seus filtros de busca para encontrar mais opções.
+                    </p>
+                  </div>
+                )}
+
+                {accommodations.length === 0 && (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Star className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Nenhuma acomodação disponível</h3>
+                    <p className="text-muted-foreground">
+                      No momento não temos acomodações cadastradas. Volte em breve!
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

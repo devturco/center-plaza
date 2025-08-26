@@ -1,90 +1,104 @@
-import { Button } from "@/components/ui/button";
 import AccommodationCard from "./AccommodationCard";
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import accommodation1 from "@/assets/accommodation-1.jpg";
-import accommodation2 from "@/assets/accommodation-2.jpg";
-import accommodation3 from "@/assets/accommodation-3.jpg";
+import { Button } from "./ui/button";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useFeaturedRooms } from "@/hooks/useRooms";
 
 const FeaturedAccommodations = () => {
-  const accommodations = [
-    {
-      id: 1,
-      name: "Chalé das Montanhas",
-      image: accommodation1,
-      location: "Serra da Mantiqueira",
-      rating: 4.9,
-      reviewCount: 42,
-      price: 320,
-      maxGuests: 6,
-      amenities: ["wifi", "estacionamento", "cafe"],
-      featured: true,
-    },
-    {
-      id: 2,
-      name: "Casa de Vidro",
-      image: accommodation2,
-      location: "Vale Encantado",
-      rating: 4.8,
-      reviewCount: 28,
-      price: 450,
-      maxGuests: 4,
-      amenities: ["wifi", "estacionamento"],
-      featured: false,
-    },
-    {
-      id: 3,
-      name: "Refúgio de Pedra",
-      image: accommodation3,
-      location: "Picos da Serra",
-      rating: 4.9,
-      reviewCount: 56,
-      price: 380,
-      maxGuests: 8,
-      amenities: ["wifi", "estacionamento", "cafe"],
-      featured: true,
-    },
-  ];
+  const navigate = useNavigate();
+  const { rooms: accommodations, loading, error } = useFeaturedRooms();
+
+  if (loading) {
+    return (
+      <section className="py-20 bg-secondary/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Acomodações em Destaque
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Descubra nossas acomodações mais exclusivas, cuidadosamente
+              selecionadas para proporcionar uma experiência inesquecível
+            </p>
+          </div>
+          
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Carregando acomodações...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-20 bg-secondary/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Acomodações em Destaque
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Descubra nossas acomodações mais exclusivas, cuidadosamente
+              selecionadas para proporcionar uma experiência inesquecível
+            </p>
+          </div>
+          
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-20 bg-secondary/30">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-16 animate-fade-in-up">
+        <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Hospedagens em{" "}
-            <span className="bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
-              Destaque
-            </span>
+            Acomodações em Destaque
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Descubra nossas acomodações mais procuradas, cada uma oferecendo 
-            uma experiência única em meio à natureza exuberante da serra.
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Descubra nossas acomodações mais exclusivas, cuidadosamente
+            selecionadas para proporcionar uma experiência inesquecível
           </p>
         </div>
 
-        {/* Accommodation Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {accommodations.map((accommodation, index) => (
-            <div
-              key={accommodation.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.2}s` }}
-            >
-              <AccommodationCard {...accommodation} />
+        {accommodations.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {accommodations.map((accommodation, index) => (
+                <div
+                  key={accommodation.id}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.2}s` }}
+                >
+                  <AccommodationCard {...accommodation} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* CTA */}
-        <div className="text-center">
-          <Button variant="hero" size="lg" asChild>
-            <Link to="/hospedagens">
-              Ver Todas as Hospedagens
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </Button>
-        </div>
+            <div className="text-center">
+              <Button
+                size="lg"
+                variant="outline"
+                className="group"
+                onClick={() => navigate("/hospedagens")}
+              >
+                Ver Todas as Hospedagens
+                <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">Nenhuma acomodação disponível no momento.</p>
+            <Button onClick={() => navigate("/hospedagens")}>Ver Todas as Hospedagens</Button>
+          </div>
+        )}
       </div>
     </section>
   );

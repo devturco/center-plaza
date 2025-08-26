@@ -143,13 +143,14 @@ export const BookingFlow = ({ open, onOpenChange, accommodation }: BookingFlowPr
         amenities: accommodation.amenities,
       };
       
-      // Salvar reserva no contexto
-      const newBookingId = addReservation(reservationData);
+      // Salvar reserva no contexto (agora é assíncrono)
+      const newBookingId = await addReservation(reservationData);
       setBookingId(newBookingId);
       
       setCurrentStep("confirmation");
       toast.success("Reserva confirmada com sucesso!");
     } catch (error) {
+      console.error('Erro ao confirmar reserva:', error);
       toast.error("Erro ao processar reserva. Tente novamente.");
     } finally {
       setLoading(false);

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroImage from "@/assets/hero-accommodation.jpg";
+import heroImage from "@/assets/bg-hero-hootel.jpg";
 
 const HeroSection = () => {
   return (
@@ -13,7 +13,7 @@ const HeroSection = () => {
           alt="Acomodação luxuosa na serra"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-gray-800/50 to-transparent" />
       </div>
 
       {/* Content */}
@@ -27,9 +27,9 @@ const HeroSection = () => {
 
           {/* Main Heading */}
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-            Escape para o
+            Center Plaza
             <span className="block bg-gradient-to-r from-accent-warm to-accent bg-clip-text text-transparent">
-              Extraordinário
+              Hotel
             </span>
           </h1>
 
@@ -67,7 +67,7 @@ const HeroSection = () => {
               asChild
             >
               <Link to="/hospedagens">
-                Explorar Hospedagens
+                Ver Suítes
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

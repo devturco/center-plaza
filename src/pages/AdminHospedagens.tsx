@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { hotelService, roomService, Hotel, RoomType } from "@/services/api";
+import ImageUpload from "@/components/admin/ImageUpload";
 import { 
   Plus, 
   Search, 
@@ -30,46 +34,225 @@ const AdminHospedagens = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAccommodation, setSelectedAccommodation] = useState(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isEditHotelDialogOpen, setIsEditHotelDialogOpen] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    location: "",
+    description: "",
+    maxGuests: "",
+    price: "",
+    rooms: ""
+  });
+  const [roomFormData, setRoomFormData] = useState({
+    hotel_id: '',
+    name: '',
+    description: '',
+    size_sqm: '',
+    bed_type: '',
+    bed_count: 1,
+    max_occupancy: 2,
+    amenities: [],
+    bathroom_type: '',
+    smoking_allowed: false,
+    price_per_night: ''
+  });
+  const [roomImages, setRoomImages] = useState<any[]>([]);
 
-  const accommodations = [
-    {
-      id: 1,
-      name: "Chalé das Montanhas",
-      location: "Serra da Mantiqueira",
-      maxGuests: 6,
-      price: 320,
-      status: "ativo",
-      bookings: 12,
-      rating: 4.9,
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      name: "Casa de Vidro",
-      location: "Vale Encantado", 
-      maxGuests: 4,
-      price: 450,
-      status: "ativo",
-      bookings: 8,
-      rating: 4.8,
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      name: "Refúgio de Pedra",
-      location: "Picos da Serra",
-      maxGuests: 8,
-      price: 380,
-      status: "manutenção",
-      bookings: 15,
-      rating: 4.9,
-      image: "/placeholder.svg"
+  // Carregar dados do backend
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [hotelsData, roomTypesData] = await Promise.all([
+        hotelService.getAll(),
+        roomService.getAll()
+      ]);
+      setHotels(hotelsData);
+      setRoomTypes(roomTypesData);
+    } catch (err) {
+      setError('Erro ao carregar dados');
+      toast.error('Erro ao carregar hospedagens');
+      console.error('Erro ao carregar dados:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredAccommodations = accommodations.filter(acc => 
-    acc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    acc.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const handleCreateHotel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const newHotel = {
+        name: formData.name,
+        location: formData.location,
+        description: formData.description
+      };
+      
+      await hotelService.create(newHotel);
+      toast.success('Hotel criado com sucesso!');
+      setIsCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        location: "",
+        description: "",
+        maxGuests: "",
+        price: "",
+        rooms: ""
+      });
+      loadData();
+    } catch (err) {
+      toast.error('Erro ao criar hotel');
+      console.error('Erro ao criar hotel:', err);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleEditHotel = (hotel: Hotel) => {
+    setSelectedHotel(hotel);
+    setFormData({
+      name: hotel.name || '',
+      location: hotel.location || '',
+      description: hotel.description || '',
+      maxGuests: '',
+      price: '',
+      rooms: ''
+    });
+    setIsEditHotelDialogOpen(true);
+  };
+
+  const handleUpdateHotel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHotel) return;
+    
+    try {
+      const updatedHotel = {
+        name: formData.name,
+        location: formData.location,
+        description: formData.description
+      };
+      
+      await hotelService.update(selectedHotel.id, updatedHotel);
+      alert('Hotel atualizado com sucesso!');
+      setIsEditHotelDialogOpen(false);
+      setSelectedHotel(null);
+      setFormData({
+        name: '',
+        location: '',
+        description: '',
+        maxGuests: '',
+        price: '',
+        rooms: ''
+      });
+      await loadData();
+    } catch (err) {
+      console.error('Erro ao atualizar hotel:', err);
+      alert('Erro ao atualizar hotel');
+    }
+  };
+
+  const handleEditRoom = (room: any) => {
+    setSelectedRoom(room);
+    setRoomFormData({
+      hotel_id: room.hotel_id || '',
+      name: room.name || '',
+      description: room.description || '',
+      size_sqm: room.size_sqm || '',
+      bed_type: room.bed_type || '',
+      bed_count: room.bed_count || 1,
+      max_occupancy: room.max_occupancy || 2,
+      amenities: room.amenities || [],
+      bathroom_type: room.bathroom_type || '',
+      smoking_allowed: room.smoking_allowed || false,
+      price_per_night: room.price_per_night || ''
+    });
+    
+    // Converter imagens existentes para o formato do componente
+     const existingImages = (room.images || []).map((img: any, index: number) => ({
+       id: img.id,
+       preview: `data:${img.image_type};base64,${img.image_data}`,
+       displayOrder: img.display_order || index + 1,
+       isFeatured: img.display_order === 1
+     }));
+     
+     // Ordenar por display_order
+     existingImages.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    setRoomImages(existingImages);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleRoomFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRoom) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🔍 Dados sendo enviados:');
+      console.log('Room ID:', selectedRoom.id);
+      console.log('Form Data:', roomFormData);
+      
+      // Usar o serviço de API que envia JSON
+      const updatedRoom = await roomService.update(selectedRoom.id, {
+        hotel_id: parseInt(roomFormData.hotel_id),
+        name: roomFormData.name,
+        description: roomFormData.description,
+        size_sqm: parseFloat(roomFormData.size_sqm),
+        bed_type: roomFormData.bed_type,
+        bed_count: parseInt(roomFormData.bed_count),
+        max_occupancy: parseInt(roomFormData.max_occupancy),
+        amenities: roomFormData.amenities || [],
+        bathroom_type: roomFormData.bathroom_type,
+        smoking_allowed: roomFormData.smoking_allowed,
+        price_per_night: parseFloat(roomFormData.price_per_night)
+      });
+      
+      console.log('✅ Quarto atualizado:', updatedRoom);
+       
+      // Recarregar dados para garantir sincronização
+      await loadData();
+       
+      // Mostrar mensagem de sucesso
+      alert('Quarto atualizado com sucesso!');
+      
+      setIsEditDialogOpen(false);
+      setSelectedRoom(null);
+      setRoomImages([]);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      setError(errorMessage);
+      console.error('❌ Erro ao atualizar quarto:', err);
+      alert('Erro ao atualizar quarto: ' + errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoomInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    setRoomFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  const filteredAccommodations = hotels.filter(hotel => 
+    hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    hotel.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -98,36 +281,40 @@ const AdminHospedagens = () => {
                   Adicione uma nova propriedade ao seu catálogo
                 </DialogDescription>
               </DialogHeader>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleCreateHotel}>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome da Hospedagem</Label>
-                    <Input id="name" placeholder="Ex: Chalé das Montanhas" />
+                    <Input 
+                      id="name" 
+                      placeholder="Ex: Chalé das Montanhas" 
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="location">Localização</Label>
-                    <Input id="location" placeholder="Ex: Serra da Mantiqueira" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="maxGuests">Máx. Hóspedes</Label>
-                    <Input id="maxGuests" type="number" placeholder="6" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Preço/Noite (R$)</Label>
-                    <Input id="price" type="number" placeholder="320" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rooms">Quartos</Label>
-                    <Input id="rooms" type="number" placeholder="3" />
+                    <Input 
+                      id="location" 
+                      placeholder="Ex: Serra da Mantiqueira" 
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      required
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="description">Descrição</Label>
-                  <Textarea id="description" placeholder="Descreva a hospedagem..." rows={3} />
+                  <Textarea 
+                    id="description" 
+                    placeholder="Descreva a hospedagem..." 
+                    rows={3}
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -166,10 +353,7 @@ const AdminHospedagens = () => {
               <Calendar className="mr-2 h-4 w-4" />
               Reservas
             </Button>
-            <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/criar-quartos")}>
-              <Bed className="mr-2 h-4 w-4" />
-              Criar Quartos
-            </Button>
+
             <Button variant="ghost" className="w-full justify-start" onClick={() => navigate("/admin/relatorios")}>
               <TrendingUp className="mr-2 h-4 w-4" />
               Relatórios
@@ -199,8 +383,8 @@ const AdminHospedagens = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total</p>
-                      <p className="text-2xl font-bold">{accommodations.length}</p>
+                      <p className="text-sm text-muted-foreground">Total Hotéis</p>
+                      <p className="text-2xl font-bold">{hotels.length}</p>
                     </div>
                     <Home className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -211,38 +395,38 @@ const AdminHospedagens = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Ativas</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {accommodations.filter(a => a.status === "ativo").length}
+                      <p className="text-sm text-muted-foreground">Tipos de Quarto</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {roomTypes.length}
                       </p>
+                    </div>
+                    <Bed className="h-8 w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Localizações</p>
+                      <p className="text-2xl font-bold">{new Set(hotels.map(h => h.location)).size}</p>
+                    </div>
+                    <MapPin className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <p className="text-2xl font-bold text-green-600">Ativo</p>
                     </div>
                     <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
                       <div className="h-3 w-3 bg-green-600 rounded-full" />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Ocupação Média</p>
-                      <p className="text-2xl font-bold">78%</p>
-                    </div>
-                    <Calendar className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Avaliação Média</p>
-                      <p className="text-2xl font-bold">4.9</p>
-                    </div>
-                    <Star className="h-8 w-8 text-yellow-500 fill-current" />
                   </div>
                 </CardContent>
               </Card>
@@ -251,53 +435,348 @@ const AdminHospedagens = () => {
             {/* Accommodations List */}
             <Card>
               <CardHeader>
-                <CardTitle>Hospedagens ({filteredAccommodations.length})</CardTitle>
-                <CardDescription>Gerencie suas propriedades</CardDescription>
+                <CardTitle>Hotéis ({filteredAccommodations.length})</CardTitle>
+                <CardDescription>Gerencie seus hotéis e propriedades</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {filteredAccommodations.map((accommodation) => (
-                    <div key={accommodation.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-muted rounded-lg"></div>
-                        <div>
-                          <h3 className="font-semibold">{accommodation.name}</h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {accommodation.location}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1">
-                            <span className="text-sm flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {accommodation.maxGuests} hóspedes
-                            </span>
-                            <span className="text-sm">R$ {accommodation.price}/noite</span>
-                            <Badge variant={accommodation.status === "ativo" ? "default" : "secondary"}>
-                              {accommodation.status}
-                            </Badge>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <span className="ml-2">Carregando hotéis...</span>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">{error}</p>
+                    <Button onClick={loadData} variant="outline">
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : filteredAccommodations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Nenhum hotel encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredAccommodations.map((hotel) => (
+                      <div key={hotel.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                            <Home className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{hotel.name}</h3>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {hotel.location}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {hotel.description}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <Badge variant="default">
+                                Ativo
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                ID: {hotel.id}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" title="Ver detalhes">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Editar"
+                            onClick={() => handleEditHotel(hotel)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" title="Excluir">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Room Types Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Tipos de Quartos ({roomTypes.length})</CardTitle>
+                <CardDescription>Gerencie os tipos de quartos disponíveis</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {roomTypes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Nenhum tipo de quarto encontrado.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {roomTypes.map((room) => (
+                      <div key={room.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                            {room.images && room.images.length > 0 ? (
+                              <img 
+                                src={`data:${room.images[0].image_type};base64,${room.images[0].image_data}`}
+                                alt={room.name}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            ) : (
+                              <Bed className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">{room.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {room.description}
+                            </p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <Badge variant="outline">
+                                R$ {room.price_per_night}/noite
+                              </Badge>
+                              <Badge variant="secondary">
+                                {room.max_occupancy} hóspedes
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {room.images?.length || 0} imagens
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Editar"
+                            onClick={() => handleEditRoom(room)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" title="Excluir">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </main>
       </div>
+      
+      {/* Edit Hotel Dialog */}
+      <Dialog open={isEditHotelDialogOpen} onOpenChange={setIsEditHotelDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Hotel: {selectedHotel?.name}</DialogTitle>
+            <DialogDescription>
+              Edite as informações do hotel
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleUpdateHotel} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Hotel</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">Localização</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                rows={3}
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Descreva o hotel..."
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => setIsEditHotelDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit">
+                Salvar Alterações
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Room Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Quarto: {selectedRoom?.name}</DialogTitle>
+            <DialogDescription>
+              Edite as informações e imagens do quarto
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleRoomFormSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome do Quarto</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={roomFormData.name}
+                  onChange={handleRoomInputChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="price_per_night">Preço por Noite (R$)</Label>
+                <Input
+                  id="price_per_night"
+                  name="price_per_night"
+                  type="number"
+                  step="0.01"
+                  value={roomFormData.price_per_night}
+                  onChange={handleRoomInputChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bed_type">Tipo de Cama</Label>
+                <Select 
+                  value={roomFormData.bed_type} 
+                  onValueChange={(value) => setRoomFormData(prev => ({ ...prev, bed_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de cama" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cama de Solteiro">Cama de Solteiro</SelectItem>
+                    <SelectItem value="Cama de Casal">Cama de Casal</SelectItem>
+                    <SelectItem value="Cama King">Cama King</SelectItem>
+                    <SelectItem value="Cama Queen">Cama Queen</SelectItem>
+                    <SelectItem value="Beliche">Beliche</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="max_occupancy">Ocupação Máxima</Label>
+                <Input
+                  id="max_occupancy"
+                  name="max_occupancy"
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={roomFormData.max_occupancy}
+                  onChange={handleRoomInputChange}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="size_sqm">Área (m²)</Label>
+                <Input
+                  id="size_sqm"
+                  name="size_sqm"
+                  type="number"
+                  step="0.1"
+                  value={roomFormData.size_sqm}
+                  onChange={handleRoomInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="bed_count">Número de Camas</Label>
+                <Input
+                  id="bed_count"
+                  name="bed_count"
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={roomFormData.bed_count}
+                  onChange={handleRoomInputChange}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                name="description"
+                rows={3}
+                value={roomFormData.description}
+                onChange={handleRoomInputChange}
+                placeholder="Descreva as características do quarto..."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bathroom_type">Tipo de Banheiro</Label>
+              <Input
+                id="bathroom_type"
+                name="bathroom_type"
+                value={roomFormData.bathroom_type}
+                onChange={handleRoomInputChange}
+                placeholder="Ex: Banheiro privativo com chuveiro"
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <Label>Imagens do Quarto</Label>
+              <ImageUpload
+                images={roomImages}
+                onImagesChange={setRoomImages}
+                maxImages={10}
+                showFeatured={true}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                type="button" 
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

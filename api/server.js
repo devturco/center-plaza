@@ -38,7 +38,7 @@ const dbConfig = {
   port: 3307,
   user: 'usermac',
   password: 'TH1460-d3v@',
-  database: 'maconline',
+  database: 'centerplaza',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

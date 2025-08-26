@@ -33,9 +33,8 @@ const ConsultarReserva = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const foundReservation = getReservationByCodeAndName(reservationCode, lastName);
+    try {
+      const foundReservation = await getReservationByCodeAndName(reservationCode, lastName);
       
       if (foundReservation) {
         setReservation(foundReservation);
@@ -51,20 +50,46 @@ const ConsultarReserva = () => {
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.error('Erro ao buscar reserva:', error);
+      setReservation(null);
+      toast({
+        title: "Erro na consulta",
+        description: "Ocorreu um erro ao buscar a reserva. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Confirmada";
+      case "pending":
+        return "Pendente";
+      case "cancelled":
+        return "Cancelada";
+      case "completed":
+        return "Concluída";
+      default:
+        return status;
+    }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "confirmada":
-        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Confirmada</Badge>;
-      case "pendente":
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
-      case "cancelada":
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Cancelada</Badge>;
+      case "confirmed":
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />{getStatusLabel(status)}</Badge>;
+      case "pending":
+        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />{getStatusLabel(status)}</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />{getStatusLabel(status)}</Badge>;
+      case "completed":
+        return <Badge className="bg-blue-500"><CheckCircle className="w-3 h-3 mr-1" />{getStatusLabel(status)}</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{getStatusLabel(status)}</Badge>;
     }
   };
 
@@ -141,12 +166,6 @@ const ConsultarReserva = () => {
                     )}
                   </Button>
                 </form>
-                
-                <div className="mt-6 p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">
-                    <strong>Dica:</strong> Use o código RS001234 e sobrenome "Silva" para testar
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -183,11 +202,11 @@ const ConsultarReserva = () => {
                       </div>
                       <div>
                         <span className="text-sm text-muted-foreground">E-mail</span>
-                        <p className="font-medium">{reservation.email}</p>
+                        <p className="font-medium">{reservation.guestEmail}</p>
                       </div>
                       <div>
                         <span className="text-sm text-muted-foreground">Telefone</span>
-                        <p className="font-medium">{reservation.phone}</p>
+                        <p className="font-medium">{reservation.guestPhone}</p>
                       </div>
                     </div>
                   </div>
@@ -200,39 +219,29 @@ const ConsultarReserva = () => {
                         <Calendar className="w-4 h-4 text-primary" />
                         <div>
                           <span className="text-sm text-muted-foreground">Check-in</span>
-                          <p className="font-medium">{new Date(reservation.checkIn).toLocaleDateString('pt-BR')}</p>
+                          <p className="font-medium">{new Date(reservation.checkInDate).toLocaleDateString('pt-BR')}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-primary" />
                         <div>
                           <span className="text-sm text-muted-foreground">Check-out</span>
-                          <p className="font-medium">{new Date(reservation.checkOut).toLocaleDateString('pt-BR')}</p>
+                          <p className="font-medium">{new Date(reservation.checkOutDate).toLocaleDateString('pt-BR')}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-primary" />
                         <div>
                           <span className="text-sm text-muted-foreground">Hóspedes</span>
-                          <p className="font-medium">{reservation.guests} pessoas</p>
+                          <p className="font-medium">{reservation.numberOfGuests} pessoas</p>
                         </div>
                       </div>
                       <div>
                         <span className="text-sm text-muted-foreground">Valor Total</span>
                         <p className="font-medium text-lg text-primary">
-                          R$ {reservation.total.toLocaleString()}
+                          R$ {reservation.totalPrice.toLocaleString()}
                         </p>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Amenities */}
-                  <div>
-                    <h3 className="font-semibold mb-3 text-lg">Comodidades Incluídas</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {reservation.amenities.map((amenity: string, index: number) => (
-                        <Badge key={index} variant="secondary">{amenity}</Badge>
-                      ))}
                     </div>
                   </div>
 
@@ -240,9 +249,11 @@ const ConsultarReserva = () => {
                   <div className="border-t pt-6">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold">Status do Pagamento:</span>
-                      <Badge className="bg-green-500 text-green-50">
+                      <Badge className={reservation.paymentStatus === 'paid' ? 'bg-green-500 text-green-50' : 'bg-yellow-500 text-yellow-50'}>
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Pagamento Confirmado
+                        {reservation.paymentStatus === 'paid' ? 'Pagamento Confirmado' : 
+                         reservation.paymentStatus === 'pending' ? 'Pagamento Pendente' :
+                         reservation.paymentStatus === 'refunded' ? 'Reembolsado' : 'Pendente'}
                       </Badge>
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import { Menu, X, User, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
+import logoImage from "@/assets/logo-center-plaza.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,8 +27,12 @@ const Header = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-primary">
-            Center Plaza
+          <Link to="/" className="flex items-center hover:opacity-80 transition-opacity">
+            <img 
+              src={logoImage} 
+              alt="Center Plaza Hotel" 
+              className="h-12 w-auto object-contain"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -36,9 +41,9 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
+                className={`text-sm font-medium transition-colors hover:text-gold ${
                   isActivePath(item.href)
-                    ? "text-primary border-b-2 border-primary pb-1"
+                    ? "text-primary border-b-2 border-gold pb-1"
                     : "text-muted-foreground"
                 }`}
               >

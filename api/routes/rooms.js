@@ -6,18 +6,50 @@ const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 10 // Máximo 10 arquivos
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
+      cb(new Error('Apenas arquivos JPEG, PNG e WebP são permitidos!'), false);
     }
   }
 });
 
 const router = express.Router();
+
+// Middleware para tratar erros de upload
+const handleUploadError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        error: 'Arquivo muito grande. Tamanho máximo: 5MB' 
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ 
+        error: 'Muitos arquivos. Máximo: 10 imagens' 
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({ 
+        error: 'Campo de arquivo inesperado' 
+      });
+    }
+  }
+  
+  if (err.message.includes('Apenas arquivos')) {
+    return res.status(400).json({ 
+      error: err.message 
+    });
+  }
+  
+  next(err);
+};
 
 // GET /api/rooms - Buscar todos os tipos de quartos
 router.get('/', async (req, res) => {
@@ -98,7 +130,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/rooms - Criar novo tipo de quarto
-router.post('/', upload.array('images', 10), async (req, res) => {
+router.post('/', upload.array('images', 10), handleUploadError, async (req, res) => {
   const connection = await req.db.getConnection();
   
   try {
@@ -123,6 +155,35 @@ router.post('/', upload.array('images', 10), async (req, res) => {
       await connection.rollback();
       return res.status(400).json({ 
         error: 'Campos obrigatórios: hotel_id, name' 
+      });
+    }
+
+    // Validar tipos de dados
+    if (size_sqm && (isNaN(size_sqm) || size_sqm <= 0)) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Tamanho deve ser um número positivo' 
+      });
+    }
+
+    if (bed_count && (isNaN(bed_count) || bed_count <= 0)) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Número de camas deve ser um número positivo' 
+      });
+    }
+
+    if (max_occupancy && (isNaN(max_occupancy) || max_occupancy <= 0)) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Ocupação máxima deve ser um número positivo' 
+      });
+    }
+
+    if (price_per_night && (isNaN(price_per_night) || price_per_night < 0)) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Preço deve ser um número não negativo' 
       });
     }
 
@@ -212,10 +273,14 @@ router.post('/', upload.array('images', 10), async (req, res) => {
 });
 
 // PUT /api/rooms/:id - Atualizar tipo de quarto
-router.put('/:id', upload.array('images', 10), async (req, res) => {
+router.put('/:id', upload.array('images', 10), handleUploadError, async (req, res) => {
   const connection = await req.db.getConnection();
   
   try {
+    console.log(`🔄 PUT /api/rooms/${req.params.id} - Iniciando atualização`);
+    console.log('📝 Body recebido:', req.body);
+    console.log('📁 Arquivos recebidos:', req.files ? req.files.length : 0);
+    
     await connection.beginTransaction();
     
     const { id } = req.params;
@@ -232,6 +297,15 @@ router.put('/:id', upload.array('images', 10), async (req, res) => {
       price_per_night,
       remove_images
     } = req.body;
+    
+    // Validar campos obrigatórios
+    if (!name || name.trim() === '') {
+      console.log('❌ Erro de validação: nome é obrigatório');
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Nome do quarto é obrigatório' 
+      });
+    }
 
     // Verificar se quarto existe
     const [existing] = await connection.execute(
@@ -240,14 +314,51 @@ router.put('/:id', upload.array('images', 10), async (req, res) => {
     );
     
     if (existing.length === 0) {
+      console.log(`❌ Quarto ${id} não encontrado`);
       await connection.rollback();
       return res.status(404).json({ 
         error: 'Tipo de quarto não encontrado' 
       });
     }
+    
+    console.log(`✅ Quarto ${id} encontrado, prosseguindo com atualização`);
+
+    // Validar dados numéricos
+    if (size_sqm && (isNaN(parseFloat(size_sqm)) || parseFloat(size_sqm) <= 0)) {
+      console.log('❌ Erro de validação: size_sqm inválido:', size_sqm);
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Tamanho deve ser um número positivo' 
+      });
+    }
+
+    if (bed_count && (isNaN(parseInt(bed_count)) || parseInt(bed_count) <= 0)) {
+      console.log('❌ Erro de validação: bed_count inválido:', bed_count);
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Número de camas deve ser um número positivo' 
+      });
+    }
+
+    if (max_occupancy && (isNaN(parseInt(max_occupancy)) || parseInt(max_occupancy) <= 0)) {
+      console.log('❌ Erro de validação: max_occupancy inválido:', max_occupancy);
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Ocupação máxima deve ser um número positivo' 
+      });
+    }
+
+    if (price_per_night && (isNaN(parseFloat(price_per_night)) || parseFloat(price_per_night) < 0)) {
+      console.log('❌ Erro de validação: price_per_night inválido:', price_per_night);
+      await connection.rollback();
+      return res.status(400).json({ 
+        error: 'Preço deve ser um número não negativo' 
+      });
+    }
 
     // Atualizar tipo de quarto
-    await connection.execute(
+    console.log('🔄 Executando UPDATE na tabela room_types...');
+    const updateResult = await connection.execute(
       `UPDATE room_types SET 
         name = ?, description = ?, size_sqm = ?, bed_type = ?, bed_count = ?,
         max_occupancy = ?, amenities = ?, bathroom_type = ?, smoking_allowed = ?,
@@ -267,14 +378,31 @@ router.put('/:id', upload.array('images', 10), async (req, res) => {
         id
       ]
     );
+    console.log('✅ UPDATE executado, linhas afetadas:', updateResult[0].affectedRows);
     
     // Remover imagens específicas se solicitado
-    if (remove_images && Array.isArray(remove_images)) {
-      for (const imageId of remove_images) {
-        await connection.execute(
-          'DELETE FROM room_images WHERE id = ? AND room_type_id = ?',
-          [imageId, id]
-        );
+    if (remove_images) {
+      console.log('🗑️ Processando remoção de imagens:', remove_images);
+      let imagesToRemove = [];
+      
+      if (typeof remove_images === 'string') {
+        try {
+          imagesToRemove = JSON.parse(remove_images);
+        } catch (e) {
+          console.log('❌ Erro ao fazer parse do remove_images:', e);
+        }
+      } else if (Array.isArray(remove_images)) {
+        imagesToRemove = remove_images;
+      }
+      
+      if (imagesToRemove.length > 0) {
+        console.log('🗑️ Removendo imagens:', imagesToRemove);
+        for (const imageId of imagesToRemove) {
+          await connection.execute(
+            'DELETE FROM room_images WHERE id = ? AND room_type_id = ?',
+            [imageId, id]
+          );
+        }
       }
     }
     
@@ -300,9 +428,12 @@ router.put('/:id', upload.array('images', 10), async (req, res) => {
       }
     }
     
+    console.log('💾 Fazendo commit da transação...');
     await connection.commit();
+    console.log('✅ Commit realizado com sucesso');
     
     // Buscar o quarto atualizado com imagens
+    console.log('🔍 Buscando dados atualizados do quarto...');
     const [updatedRoom] = await req.db.execute(
       `SELECT rt.*, h.name as hotel_name 
        FROM room_types rt 
@@ -316,7 +447,8 @@ router.put('/:id', upload.array('images', 10), async (req, res) => {
       [id]
     );
     updatedRoom[0].images = images;
-
+    
+    console.log('📤 Enviando resposta de sucesso');
     res.json({
       message: 'Tipo de quarto atualizado com sucesso',
       room: updatedRoom[0]
