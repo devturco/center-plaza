@@ -1,0 +1,25 @@
+# Ignore API folder to prevent serverless functions creation
+api/
+
+# Ignore database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore development files
+.env.local
+.env.development
+
+# Ignore node_modules (already ignored by default but being explicit)
+node_modules/
+
+# Ignore source maps
+*.map
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore temporary files
+tmp/
+temp/
