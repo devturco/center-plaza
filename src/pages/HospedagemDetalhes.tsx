@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,6 +15,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { BookingFlow } from "@/components/BookingFlow";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { roomService, RoomType } from "@/services/api";
 import { toast } from "sonner";
 import { 
   Star, 
@@ -38,7 +39,7 @@ import accommodation2 from "@/assets/accommodation-2.jpg";
 import accommodation3 from "@/assets/accommodation-3.jpg";
 
 const HospedagemDetalhes = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
@@ -49,36 +50,89 @@ const HospedagemDetalhes = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [bookingFlowOpen, setBookingFlowOpen] = useState(false);
+  const [room, setRoom] = useState<RoomType | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - in real app, fetch based on ID
+  useEffect(() => {
+    if (id) {
+      fetchRoomDetails();
+    }
+  }, [id]);
+
+  const fetchRoomDetails = async () => {
+    try {
+      setLoading(true);
+      const roomData = await roomService.getById(parseInt(id!));
+      setRoom(roomData);
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do quarto:', error);
+      toast.error('Erro ao carregar detalhes da acomodação');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="pt-20">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">Carregando...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!room) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <main className="pt-20">
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center">Acomodação não encontrada</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Parse amenities
+  let amenities: string[] = [];
+  if (room.amenities) {
+    if (typeof room.amenities === 'string') {
+      try {
+        amenities = JSON.parse(room.amenities);
+      } catch {
+        amenities = room.amenities.split(',').map(a => a.trim());
+      }
+    } else if (Array.isArray(room.amenities)) {
+      amenities = room.amenities;
+    }
+  }
+
   const accommodation = {
-    id: 1,
-    name: "Chalé das Montanhas",
-    location: "Serra da Mantiqueira",
-    rating: 4.9,
-    reviewCount: 42,
-    price: 320,
-    maxGuests: 6,
-    bedrooms: 3,
-    bathrooms: 2,
-    amenities: ["wifi", "estacionamento", "cafe"],
+    id: room.id,
+    name: room.name,
+    location: room.hotel_name || 'Center Plaza Hotel',
+    rating: 4.8,
+    reviewCount: 45,
+    price: room.price_per_night,
+    maxGuests: room.max_occupancy,
+    bedrooms: Math.ceil(room.max_occupancy / 2),
+    bathrooms: 1,
+    amenities: amenities.slice(0, 3).map(a => a.toLowerCase().replace(/\s+/g, '')),
     images: [accommodation1, accommodation2, accommodation3],
-    description: "Um refúgio perfeito na Serra da Mantiqueira, oferecendo vistas deslumbrantes das montanhas e uma experiência única de contato com a natureza. O chalé conta com arquitetura rústica e moderna, proporcionando conforto e aconchego para toda a família.",
-    features: [
-      "Vista panorâmica das montanhas",
-      "Lareira aconchegante",
-      "Deck com churrasqueira",
-      "Trilhas próximas",
-      "Wi-Fi de alta velocidade",
-      "Estacionamento privativo"
-    ],
+    description: room.description || 'Quarto confortável e bem equipado no Center Plaza Hotel.',
+    features: amenities.slice(0, 6),
     reviews: [
       {
         id: 1,
         name: "Maria Silva",
         rating: 5,
         date: "Novembro 2024",
-        comment: "Lugar incrível! A vista é de tirar o fôlego e o chalé é muito aconchegante. Recomendo demais!"
+        comment: "Quarto excelente! Muito confortável e bem localizado."
       },
       {
         id: 2,

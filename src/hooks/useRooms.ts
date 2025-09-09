@@ -42,13 +42,13 @@ function mapRoomToAccommodation(room: RoomType, index: number): AccommodationDat
     id: room.id,
     name: room.name,
     image: defaultImages[index % defaultImages.length],
-    location: room.description || 'Center Plaza',
-    rating: parseFloat((4.5 + Math.random() * 0.4).toFixed(1)), // Rating simulado entre 4.5 e 4.9
-    reviewCount: Math.floor(Math.random() * 50) + 20, // Reviews simulados entre 20 e 70
+    location: room.hotel_name || 'Center Plaza',
+    rating: 4.8, // Rating fixo baseado na qualidade do hotel
+    reviewCount: 45, // Número fixo de reviews
     price: room.price_per_night,
-    maxGuests: room.capacity,
-    amenities: amenities.length > 0 ? amenities : ['wifi', 'estacionamento'],
-    featured: index < 3, // Primeiros 3 são featured
+    maxGuests: room.max_occupancy,
+    amenities: amenities.length > 0 ? amenities : ['Wi-Fi', 'Estacionamento'],
+    featured: index < 3,
   };
 }
 
@@ -75,7 +75,7 @@ export function useRooms() {
     } catch (err) {
       console.error('Erro ao buscar quartos:', err);
       setError('Erro ao carregar as acomodações');
-      // Fallback para dados mockados em caso de erro
+      // Em caso de erro, manter lista vazia
       setRooms([]);
     } finally {
       setLoading(false);

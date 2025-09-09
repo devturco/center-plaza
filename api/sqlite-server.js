@@ -10,6 +10,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Configurar charset UTF-8 para todas as respostas
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 // Middleware de log
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
@@ -27,9 +33,10 @@ app.get('/api/hotels', async (req, res) => {
     const db = await getConnection();
     const hotels = await db.all('SELECT * FROM hotels ORDER BY created_at DESC');
     
-    // Parse amenities JSON
+    // Parse amenities JSON and add location field
     const hotelsWithParsedAmenities = hotels.map(hotel => ({
       ...hotel,
+      location: hotel.address, // Adicionar campo location para compatibilidade
       amenities: hotel.amenities ? JSON.parse(hotel.amenities) : []
     }));
     
@@ -155,6 +162,7 @@ app.get('/api/hotels/:id', async (req, res) => {
     
     res.json({
       ...hotel,
+      location: hotel.address, // Adicionar campo location para compatibilidade
       amenities: hotel.amenities ? JSON.parse(hotel.amenities) : []
     });
   } catch (error) {
@@ -222,11 +230,25 @@ app.put('/api/hotels/:id', async (req, res) => {
     
     const db = await getConnection();
     
-    // Verificar se hotel existe
-    const existingHotel = await db.get('SELECT id FROM hotels WHERE id = ?', [id]);
+    // Verificar se hotel existe e buscar dados atuais
+    const existingHotel = await db.get('SELECT * FROM hotels WHERE id = ?', [id]);
     if (!existingHotel) {
       return res.status(404).json({ error: 'Hotel não encontrado' });
     }
+    
+    // Usar valores existentes se não fornecidos
+    const updatedData = {
+      name: name !== undefined ? name : existingHotel.name,
+      address: address !== undefined ? address : existingHotel.address,
+      city: city !== undefined ? city : existingHotel.city,
+      state: state !== undefined ? state : existingHotel.state,
+      zip_code: zip_code !== undefined ? zip_code : existingHotel.zip_code,
+      phone: phone !== undefined ? phone : existingHotel.phone,
+      email: email !== undefined ? email : existingHotel.email,
+      website: website !== undefined ? website : existingHotel.website,
+      description: description !== undefined ? description : existingHotel.description,
+      amenities: amenities !== undefined ? amenities : (existingHotel.amenities ? JSON.parse(existingHotel.amenities) : [])
+    };
     
     await db.run(`
       UPDATE hotels SET 
@@ -234,12 +256,17 @@ app.put('/api/hotels/:id', async (req, res) => {
         phone = ?, email = ?, website = ?, description = ?, amenities = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `, [name, address, city, state, zip_code, phone, email, website, description, JSON.stringify(amenities || []), id]);
+    `, [
+      updatedData.name, updatedData.address, updatedData.city, updatedData.state, 
+      updatedData.zip_code, updatedData.phone, updatedData.email, updatedData.website, 
+      updatedData.description, JSON.stringify(updatedData.amenities), id
+    ]);
     
     const updatedHotel = await db.get('SELECT * FROM hotels WHERE id = ?', [id]);
     
     res.json({
       ...updatedHotel,
+      location: updatedHotel.address, // Adicionar campo location para compatibilidade
       amenities: updatedHotel.amenities ? JSON.parse(updatedHotel.amenities) : []
     });
   } catch (error) {
@@ -400,6 +427,68 @@ app.post('/api/reservations', async (req, res) => {
   }
 });
 
+// Rota para atualizar reserva completa
+app.put('/api/reservations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      hotel_id, room_type_id, guest_name, guest_email, guest_phone,
+      guest_document, check_in_date, check_out_date, number_of_guests,
+      total_amount, special_requests, status
+    } = req.body;
+    
+    const db = await getConnection();
+    
+    // Verificar se a reserva existe
+    const existingReservation = await db.get('SELECT id FROM reservations WHERE id = ?', [id]);
+    if (!existingReservation) {
+      return res.status(404).json({ error: 'Reserva não encontrada' });
+    }
+    
+    // Validar status se fornecido
+    if (status && !['pending', 'confirmed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: 'Status inválido' });
+    }
+    
+    // Atualizar reserva
+    await db.run(`
+      UPDATE reservations SET 
+        hotel_id = COALESCE(?, hotel_id),
+        room_type_id = COALESCE(?, room_type_id),
+        guest_name = COALESCE(?, guest_name),
+        guest_email = COALESCE(?, guest_email),
+        guest_phone = COALESCE(?, guest_phone),
+        guest_document = COALESCE(?, guest_document),
+        check_in_date = COALESCE(?, check_in_date),
+        check_out_date = COALESCE(?, check_out_date),
+        number_of_guests = COALESCE(?, number_of_guests),
+        total_amount = COALESCE(?, total_amount),
+        special_requests = COALESCE(?, special_requests),
+        status = COALESCE(?, status),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [
+      hotel_id, room_type_id, guest_name, guest_email, guest_phone,
+      guest_document, check_in_date, check_out_date, number_of_guests,
+      total_amount, special_requests, status, id
+    ]);
+    
+    // Buscar reserva atualizada
+    const updatedReservation = await db.get(`
+      SELECT r.*, h.name as hotel_name, rt.name as room_type_name
+      FROM reservations r
+      JOIN hotels h ON r.hotel_id = h.id
+      JOIN room_types rt ON r.room_type_id = rt.id
+      WHERE r.id = ?
+    `, [id]);
+    
+    res.json(updatedReservation);
+  } catch (error) {
+    console.error('Erro ao atualizar reserva:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Rota para atualizar status da reserva
 app.patch('/api/reservations/:id/status', async (req, res) => {
   try {
@@ -428,6 +517,93 @@ app.patch('/api/reservations/:id/status', async (req, res) => {
     res.json(updatedReservation);
   } catch (error) {
     console.error('Erro ao atualizar status da reserva:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Rota para deletar hotel
+app.delete('/api/hotels/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await getConnection();
+    
+    // Verificar se hotel existe
+    const existingHotel = await db.get('SELECT id FROM hotels WHERE id = ?', [id]);
+    if (!existingHotel) {
+      return res.status(404).json({ error: 'Hotel não encontrado' });
+    }
+    
+    // Verificar se há quartos associados
+    const roomsCount = await db.get('SELECT COUNT(*) as count FROM room_types WHERE hotel_id = ?', [id]);
+    if (roomsCount.count > 0) {
+      return res.status(400).json({ error: 'Não é possível excluir hotel com quartos cadastrados. Exclua os quartos primeiro.' });
+    }
+    
+    // Verificar se há reservas associadas
+    const reservationsCount = await db.get('SELECT COUNT(*) as count FROM reservations WHERE hotel_id = ?', [id]);
+    if (reservationsCount.count > 0) {
+      return res.status(400).json({ error: 'Não é possível excluir hotel com reservas. Cancele as reservas primeiro.' });
+    }
+    
+    // Deletar hotel
+    await db.run('DELETE FROM hotels WHERE id = ?', [id]);
+    
+    console.log(`✅ Hotel ID ${id} deletado com sucesso`);
+    res.json({ message: 'Hotel deletado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar hotel:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Rota para deletar quarto
+app.delete('/api/rooms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await getConnection();
+    
+    // Verificar se quarto existe
+    const existingRoom = await db.get('SELECT id FROM room_types WHERE id = ?', [id]);
+    if (!existingRoom) {
+      return res.status(404).json({ error: 'Quarto não encontrado' });
+    }
+    
+    // Verificar se há reservas associadas
+    const reservationsCount = await db.get('SELECT COUNT(*) as count FROM reservations WHERE room_type_id = ?', [id]);
+    if (reservationsCount.count > 0) {
+      return res.status(400).json({ error: 'Não é possível excluir quarto com reservas. Cancele as reservas primeiro.' });
+    }
+    
+    // Deletar quarto
+    await db.run('DELETE FROM room_types WHERE id = ?', [id]);
+    
+    console.log(`✅ Quarto ID ${id} deletado com sucesso`);
+    res.json({ message: 'Quarto deletado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar quarto:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Rota para deletar reserva
+app.delete('/api/reservations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await getConnection();
+    
+    // Verificar se reserva existe
+    const existingReservation = await db.get('SELECT id FROM reservations WHERE id = ?', [id]);
+    if (!existingReservation) {
+      return res.status(404).json({ error: 'Reserva não encontrada' });
+    }
+    
+    // Deletar reserva
+    await db.run('DELETE FROM reservations WHERE id = ?', [id]);
+    
+    console.log(`✅ Reserva ID ${id} deletada com sucesso`);
+    res.json({ message: 'Reserva deletada com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar reserva:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

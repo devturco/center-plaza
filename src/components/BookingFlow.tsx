@@ -115,8 +115,7 @@ export const BookingFlow = ({ open, onOpenChange, accommodation }: BookingFlowPr
   const handleConfirmBooking = async () => {
     setLoading(true);
     try {
-      // Simular processamento do pagamento
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Processamento do pagamento (em produção, integrar com gateway de pagamento)
       
       // Criar dados da reserva
       const reservationData = {

@@ -20,7 +20,12 @@ async function setupSQLiteDatabase() {
       driver: sqlite3.Database
     });
     
-    console.log('✅ Conectado ao banco SQLite!');
+    // Configurar encoding UTF-8
+    await db.exec('PRAGMA encoding = "UTF-8"');
+    await db.exec('PRAGMA journal_mode = WAL');
+    await db.exec('PRAGMA synchronous = NORMAL');
+    
+    console.log('✅ Conectado ao banco SQLite com encoding UTF-8!');
     
     // Criar tabela de hotéis
     await db.exec(`

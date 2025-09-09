@@ -19,7 +19,13 @@ export async function getConnection() {
         filename: dbPath,
         driver: sqlite3.Database
       });
-      console.log('✅ Conectado ao banco SQLite');
+      
+      // Configurar encoding UTF-8
+      await db.exec('PRAGMA encoding = "UTF-8"');
+      await db.exec('PRAGMA journal_mode = WAL');
+      await db.exec('PRAGMA synchronous = NORMAL');
+      
+      console.log('✅ Conectado ao banco SQLite com encoding UTF-8');
     } catch (error) {
       console.error('❌ Erro ao conectar com SQLite:', error);
       throw error;

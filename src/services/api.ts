@@ -8,6 +8,7 @@ export interface Hotel {
   name: string;
   description?: string;
   address?: string;
+  location?: string; // Campo para compatibilidade com frontend
   phone?: string;
   email?: string;
   created_at?: string;
@@ -150,6 +151,48 @@ export const roomService = {
       method: 'PUT',
       body: JSON.stringify(room),
     });
+  },
+
+  // Atualizar tipo de quarto com imagens
+  async updateWithImages(id: number, room: Partial<Omit<RoomType, 'id' | 'created_at' | 'updated_at'>>, images: File[]): Promise<RoomType> {
+    const formData = new FormData();
+    
+    // Adicionar dados do quarto diretamente no FormData
+    Object.entries(room).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+    
+    // Adicionar imagens
+    images.forEach((image) => {
+      formData.append('images', image);
+    });
+    
+    const url = `${API_BASE_URL}/rooms/${id}`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new ApiError(response.status, `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.room || data;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(0, `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   },
 
   // Deletar tipo de quarto

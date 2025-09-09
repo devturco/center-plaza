@@ -37,7 +37,7 @@ const AdminHospedagens = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isEditHotelDialogOpen, setIsEditHotelDialogOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState<RoomType | null>(null);
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,7 @@ const AdminHospedagens = () => {
     smoking_allowed: false,
     price_per_night: ''
   });
-  const [roomImages, setRoomImages] = useState<any[]>([]);
+  const [roomImages, setRoomImages] = useState<{id?: number; preview: string; displayOrder: number; isFeatured: boolean}[]>([]);
 
   // Carregar dados do backend
   useEffect(() => {
@@ -94,8 +94,15 @@ const AdminHospedagens = () => {
     try {
       const newHotel = {
         name: formData.name,
-        location: formData.location,
-        description: formData.description
+        address: formData.location,
+        city: 'São Paulo',
+        state: 'SP',
+        zip_code: '',
+        phone: '',
+        email: '',
+        website: '',
+        description: formData.description,
+        amenities: []
       };
       
       await hotelService.create(newHotel);
@@ -125,7 +132,7 @@ const AdminHospedagens = () => {
     setSelectedHotel(hotel);
     setFormData({
       name: hotel.name || '',
-      location: hotel.location || '',
+      location: hotel.address || '',
       description: hotel.description || '',
       maxGuests: '',
       price: '',
@@ -141,13 +148,19 @@ const AdminHospedagens = () => {
     try {
       const updatedHotel = {
         name: formData.name,
-        address: formData.location, // Mapear location para address
-        city: 'São Paulo', // Valor padrão
-        description: formData.description
+        address: formData.location,
+        city: selectedHotel.city || 'São Paulo',
+        state: selectedHotel.state || 'SP',
+        zip_code: selectedHotel.zip_code || '',
+        phone: selectedHotel.phone || '',
+        email: selectedHotel.email || '',
+        website: selectedHotel.website || '',
+        description: formData.description,
+        amenities: selectedHotel.amenities || []
       };
       
       await hotelService.update(selectedHotel.id, updatedHotel);
-      alert('Hotel atualizado com sucesso!');
+      toast.success('Hotel atualizado com sucesso!');
       setIsEditHotelDialogOpen(false);
       setSelectedHotel(null);
       setFormData({
@@ -161,11 +174,41 @@ const AdminHospedagens = () => {
       await loadData();
     } catch (err) {
       console.error('Erro ao atualizar hotel:', err);
-      alert('Erro ao atualizar hotel');
+      toast.error('Erro ao atualizar hotel');
     }
   };
 
-  const handleEditRoom = (room: any) => {
+  const handleDeleteHotel = async (hotel: Hotel) => {
+    if (!confirm(`Tem certeza que deseja excluir o hotel "${hotel.name}"?`)) {
+      return;
+    }
+    
+    try {
+      await hotelService.delete(hotel.id);
+      toast.success('Hotel excluído com sucesso!');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao excluir hotel:', error);
+      toast.error('Erro ao excluir hotel');
+    }
+  };
+
+  const handleDeleteRoom = async (room: RoomType) => {
+    if (!confirm(`Tem certeza que deseja excluir o quarto "${room.name}"?`)) {
+      return;
+    }
+    
+    try {
+      await roomService.delete(room.id);
+      toast.success('Quarto excluído com sucesso!');
+      loadData();
+    } catch (error) {
+      console.error('Erro ao excluir quarto:', error);
+      toast.error('Erro ao excluir quarto');
+    }
+  };
+
+  const handleEditRoom = (room: RoomType) => {
     setSelectedRoom(room);
     setRoomFormData({
       hotel_id: room.hotel_id || '',
@@ -182,7 +225,7 @@ const AdminHospedagens = () => {
     });
     
     // Converter imagens existentes para o formato do componente
-     const existingImages = (room.images || []).map((img: any, index: number) => ({
+     const existingImages = (room.images || []).map((img: {id: number; image_type: string; image_data: string; display_order?: number}, index: number) => ({
        id: img.id,
        preview: `data:${img.image_type};base64,${img.image_data}`,
        displayOrder: img.display_order || index + 1,
@@ -206,9 +249,9 @@ const AdminHospedagens = () => {
       console.log('🔍 Dados sendo enviados:');
       console.log('Room ID:', selectedRoom.id);
       console.log('Form Data:', roomFormData);
+      console.log('Room Images:', roomImages);
       
-      // Usar o serviço de API que envia JSON
-      const updatedRoom = await roomService.update(selectedRoom.id, {
+      const roomData = {
         hotel_id: parseInt(roomFormData.hotel_id),
         name: roomFormData.name,
         description: roomFormData.description,
@@ -220,7 +263,22 @@ const AdminHospedagens = () => {
         bathroom_type: roomFormData.bathroom_type,
         smoking_allowed: roomFormData.smoking_allowed,
         price_per_night: parseFloat(roomFormData.price_per_night)
-      });
+      };
+      
+      // Verificar se há novas imagens para enviar
+      const newImages = roomImages
+        .filter(img => img.file) // Apenas imagens que têm o arquivo original
+        .map(img => img.file as File);
+      
+      let updatedRoom;
+      
+      if (newImages.length > 0) {
+        console.log('📸 Enviando com imagens:', newImages.length);
+        updatedRoom = await roomService.updateWithImages(selectedRoom.id, roomData, newImages);
+      } else {
+        console.log('📝 Enviando apenas dados (sem imagens)');
+        updatedRoom = await roomService.update(selectedRoom.id, roomData);
+      }
       
       console.log('✅ Quarto atualizado:', updatedRoom);
        
@@ -496,7 +554,13 @@ const AdminHospedagens = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" title="Excluir">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive" 
+                            title="Excluir"
+                            onClick={() => handleDeleteHotel(hotel)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -562,7 +626,13 @@ const AdminHospedagens = () => {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive" title="Excluir">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive" 
+                            title="Excluir"
+                            onClick={() => handleDeleteRoom(room)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -598,11 +668,12 @@ const AdminHospedagens = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="location">Localização</Label>
+              <Label htmlFor="location">Endereço Completo</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={handleInputChange}
+                placeholder="Ex: Rua das Flores, 123 - Centro"
                 required
               />
             </div>

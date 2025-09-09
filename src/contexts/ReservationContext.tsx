@@ -48,7 +48,7 @@ const convertApiReservationToFrontend = (apiReservation: ApiReservation): Reserv
   return {
     id: apiReservation.id.toString(),
     accommodationId: apiReservation.hotel_id,
-    accommodationName: (apiReservation as any).hotel_name || 'Hotel',
+    accommodationName: (apiReservation as ApiReservation & {hotel_name?: string}).hotel_name || 'Hotel',
     accommodationImage: '/placeholder-hotel.jpg',
     location: 'Centro da Cidade',
     checkIn: apiReservation.check_in_date,
@@ -62,7 +62,7 @@ const convertApiReservationToFrontend = (apiReservation: ApiReservation): Reserv
     guestName: apiReservation.guest_name,
     email: apiReservation.guest_email,
     phone: apiReservation.guest_phone || '',
-    document: (apiReservation as any).guest_document || '',
+    document: (apiReservation as ApiReservation & {guest_document?: string}).guest_document || '',
     specialRequests: apiReservation.special_requests || '',
     paymentMethod: 'PIX',
     status: apiReservation.status === 'confirmed' ? 'confirmada' : apiReservation.status === 'cancelled' ? 'cancelada' : 'pendente',

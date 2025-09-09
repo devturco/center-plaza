@@ -1,6 +1,14 @@
 # Ignore API folder to prevent serverless functions creation
 api/
 
+# Ignore JavaScript files in root that could be interpreted as serverless functions
+deploy.js
+eslint.config.js
+test-integration.js
+view-database.cjs
+view-database.js
+postcss.config.js
+
 # Ignore database files
 *.db
 *.sqlite
@@ -13,6 +21,18 @@ api/
 # Ignore node_modules (already ignored by default but being explicit)
 node_modules/
 
+# Ignore build and deployment folders
+dist/
+.vercel/
+.next/
+build/
+
+# Ignore package manager files
+package-lock.json
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
 # Ignore source maps
 *.map
 
@@ -23,3 +43,16 @@ logs/
 # Ignore temporary files
 tmp/
 temp/
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore config files that might be interpreted as functions
+netlify.toml
