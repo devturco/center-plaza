@@ -18,8 +18,10 @@ postcss.config.js
 .env.local
 .env.development
 
-# Ignore node_modules (already ignored by default but being explicit)
+# Ignore node_modules (CRITICAL - this prevents 25k+ files from being uploaded)
 node_modules/
+**/node_modules/
+node_modules/**
 
 # Ignore build and deployment folders
 dist/
