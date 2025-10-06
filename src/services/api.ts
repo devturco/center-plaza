@@ -1,6 +1,16 @@
 // Serviço de API para comunicação com o backend SQLite
 
-const API_BASE_URL = 'http://localhost:3001/api';
+// Configuração dinâmica da URL da API baseada no ambiente
+const getApiBaseUrl = () => {
+  // Em produção, usar dados mockados (sem API externa)
+  if (import.meta.env.PROD) {
+    return null; // Indica que deve usar dados mockados
+  }
+  // Em desenvolvimento, usar API local
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Tipos para as entidades
 export interface Hotel {
@@ -52,11 +62,19 @@ export class ApiError extends Error {
   }
 }
 
+// Importar dados mockados
+import { mockHotels, mockRoomTypes, mockReservations, simulateNetworkDelay, generateId } from './mockData';
+
 // Função auxiliar para fazer requisições
 async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Se API_BASE_URL for null, usar dados mockados
+  if (API_BASE_URL === null) {
+    return handleMockRequest<T>(endpoint, options);
+  }
+
   const url = `${API_BASE_URL}${endpoint}`;
   
   const config: RequestInit = {
@@ -82,6 +100,134 @@ async function apiRequest<T>(
     }
     throw new ApiError(0, `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+// Função para lidar com requisições mockadas
+async function handleMockRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  await simulateNetworkDelay(300); // Simular delay de rede
+  
+  const method = options.method || 'GET';
+  const body = options.body ? JSON.parse(options.body as string) : null;
+  
+  // Roteamento para diferentes endpoints
+  if (endpoint === '/hotels') {
+    if (method === 'GET') {
+      return mockHotels as T;
+    }
+    if (method === 'POST') {
+      const newHotel = { ...body, id: generateId(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      mockHotels.push(newHotel);
+      return newHotel as T;
+    }
+  }
+  
+  if (endpoint.startsWith('/hotels/') && endpoint !== '/hotels') {
+    const id = parseInt(endpoint.split('/')[2]);
+    const hotel = mockHotels.find(h => h.id === id);
+    if (method === 'GET') {
+      if (!hotel) throw new ApiError(404, 'Hotel not found');
+      return hotel as T;
+    }
+    if (method === 'PUT') {
+      const index = mockHotels.findIndex(h => h.id === id);
+      if (index === -1) throw new ApiError(404, 'Hotel not found');
+      mockHotels[index] = { ...mockHotels[index], ...body, updated_at: new Date().toISOString() };
+      return mockHotels[index] as T;
+    }
+    if (method === 'DELETE') {
+      const index = mockHotels.findIndex(h => h.id === id);
+      if (index === -1) throw new ApiError(404, 'Hotel not found');
+      mockHotels.splice(index, 1);
+      return {} as T;
+    }
+  }
+  
+  if (endpoint === '/rooms') {
+    if (method === 'GET') {
+      return mockRoomTypes as T;
+    }
+    if (method === 'POST') {
+      const newRoom = { ...body, id: generateId(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      mockRoomTypes.push(newRoom);
+      return newRoom as T;
+    }
+  }
+  
+  if (endpoint.startsWith('/rooms/') && endpoint !== '/rooms') {
+    const id = parseInt(endpoint.split('/')[2]);
+    const room = mockRoomTypes.find(r => r.id === id);
+    if (method === 'GET') {
+      if (!room) throw new ApiError(404, 'Room not found');
+      return room as T;
+    }
+    if (method === 'PUT') {
+      const index = mockRoomTypes.findIndex(r => r.id === id);
+      if (index === -1) throw new ApiError(404, 'Room not found');
+      mockRoomTypes[index] = { ...mockRoomTypes[index], ...body, updated_at: new Date().toISOString() };
+      return mockRoomTypes[index] as T;
+    }
+    if (method === 'DELETE') {
+      const index = mockRoomTypes.findIndex(r => r.id === id);
+      if (index === -1) throw new ApiError(404, 'Room not found');
+      mockRoomTypes.splice(index, 1);
+      return {} as T;
+    }
+  }
+  
+  if (endpoint.startsWith('/hotels/') && endpoint.includes('/rooms')) {
+    const hotelId = parseInt(endpoint.split('/')[2]);
+    const hotelRooms = mockRoomTypes.filter(r => r.hotel_id === hotelId);
+    return hotelRooms as T;
+  }
+  
+  if (endpoint === '/reservations') {
+    if (method === 'GET') {
+      return mockReservations as T;
+    }
+    if (method === 'POST') {
+      const newReservation = { ...body, id: generateId(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      mockReservations.push(newReservation);
+      return newReservation as T;
+    }
+  }
+  
+  if (endpoint.startsWith('/reservations/') && endpoint !== '/reservations') {
+    const id = parseInt(endpoint.split('/')[2]);
+    const reservation = mockReservations.find(r => r.id === id);
+    if (method === 'GET') {
+      if (!reservation) throw new ApiError(404, 'Reservation not found');
+      return reservation as T;
+    }
+    if (method === 'PUT') {
+      const index = mockReservations.findIndex(r => r.id === id);
+      if (index === -1) throw new ApiError(404, 'Reservation not found');
+      mockReservations[index] = { ...mockReservations[index], ...body, updated_at: new Date().toISOString() };
+      return mockReservations[index] as T;
+    }
+    if (method === 'DELETE') {
+      const index = mockReservations.findIndex(r => r.id === id);
+      if (index === -1) throw new ApiError(404, 'Reservation not found');
+      mockReservations.splice(index, 1);
+      return {} as T;
+    }
+  }
+  
+  if (endpoint.startsWith('/reservations/guest/')) {
+    const email = endpoint.split('/')[3];
+    const guestReservations = mockReservations.filter(r => r.guest_email === email);
+    return guestReservations as T;
+  }
+  
+  if (endpoint.startsWith('/reservations/search')) {
+    // Implementar busca por código e nome se necessário
+    return mockReservations as T;
+  }
+  
+  if (endpoint === '/health') {
+    return { status: 'ok', timestamp: new Date().toISOString() } as T;
+  }
+  
+  throw new ApiError(404, `Endpoint not found: ${endpoint}`);
 }
 
 // Serviços para Hotels
@@ -155,6 +301,15 @@ export const roomService = {
 
   // Atualizar tipo de quarto com imagens
   async updateWithImages(id: number, room: Partial<Omit<RoomType, 'id' | 'created_at' | 'updated_at'>>, images: File[]): Promise<RoomType> {
+    // Se API_BASE_URL for null (produção), usar dados mockados
+    if (API_BASE_URL === null) {
+      // Em produção, simular atualização com imagens usando dados mockados
+      return handleMockRequest<RoomType>(`/rooms/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(room),
+      });
+    }
+
     const formData = new FormData();
     
     // Adicionar dados do quarto diretamente no FormData
