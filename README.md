@@ -200,9 +200,4 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 📞 Suporte
 
 Para suporte técnico ou dúvidas:
-- Email: dev@centerplaza.com
-- Issues: [GitHub Issues](https://github.com/seu-usuario/center-plaza/issues)
-
----
-
-⭐ **Se este projeto foi útil, considere dar uma estrela no GitHub!**
+- Email: devturco@gmail.com
